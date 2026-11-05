@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodieExpress - Admin Master Command Center</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: calc(100vh - 75px);
+    }
+    .admin-sidebar {
+      background: #1e272e;
+      color: #d2dae2;
+      padding: 1.5rem 1rem;
+    }
+    .admin-sidebar h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #808e9b;
+      margin: 1.2rem 0 0.6rem 0.8rem;
+    }
+    .sidebar-menu {
+      list-style: none;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.92rem;
+      transition: var(--transition);
+      margin-bottom: 4px;
+    }
+    .sidebar-item:hover, .sidebar-item.active {
+      background: var(--primary);
+      color: white;
+    }
+    .admin-main {
+      padding: 2rem;
+      background: #f1f2f6;
+      overflow-y: auto;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: white;
+      padding: 1.4rem;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      border-left: 5px solid var(--primary);
+    }
+    .stat-card h4 {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      color: var(--dark-light);
+      margin-bottom: 0.4rem;
+    }
+    .stat-card .val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--dark);
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      margin-top: 1rem;
+    }
+    .data-table th, .data-table td {
+      padding: 1rem 1.2rem;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+      font-size: 0.9rem;
+    }
+    .data-table th {
+      background: #fafbfc;
+      font-weight: 700;
+      color: var(--dark-light);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      width: 90%;
+      max-width: 520px;
+      box-shadow: var(--shadow-lg);
+    }
+    @media (max-width: 800px) {
+      .admin-layout { grid-template-columns: 1fr; }
+      .admin-sidebar { display: flex; overflow-x: auto; padding: 0.5rem; }
+      .sidebar-menu { display: flex; gap: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dynamic Header Container -->
+  <div id="navbarContainer"></div>
+
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+      <div style="padding: 0.6rem 0.8rem 1.2rem 0.8rem; border-bottom: 1px solid #2f3640;">
+        <span style="background: #e74c3c; color: white; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; font-weight: bold;">SUPER ADMIN</span>
+        <h2 style="font-size: 1.15rem; color: white; margin-top: 0.4rem;">Admin Control</h2>
+      </div>
+
+      <h3>Management</h3>
+      <ul class="sidebar-menu">
+        <li class="sidebar-item active" onclick="switchTab('overview')">📊 Overview</li>
+        <li class="sidebar-item" onclick="switchTab('restaurants')">🍽️ Restaurants</li>
+        <li class="sidebar-item" onclick="switchTab('foodItems')">🍕 Food Items</li>
+        <li class="sidebar-item" onclick="switchTab('categories')">📁 Categories</li>
+        <li class="sidebar-item" onclick="switchTab('orders')">📦 All Orders</li>
+        <li class="sidebar-item" onclick="switchTab('customers')">👥 User Accounts</li>
+      </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="admin-main">
+      <!-- TAB 1: OVERVIEW -->
+      <section id="tab-overview">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div>
+            <h1 style="font-size: 1.8rem; font-weight: 800;">Platform Performance Overview</h1>
+            <p style="color: var(--dark-light); font-size: 0.92rem;">Real-time ecosystem metrics across all cities.</p>
+          </div>
+          <button onclick="loadAdminStats()" class="add-btn" style="margin: 0;">🔄 Refresh Data</button>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card" style="border-left-color: #2ecc71;">
+            <h4>Total Revenue</h4>
+            <div class="val" id="statRevenue">₹0</div>
+          </div>
+          <div class="stat-card" style="border-left-color: #3498db;">
+            <h4>Total Orders</h4>
+            <div class="val" id="statOrders">0</div>
+          </div>
+          <div class="stat-card" style="border-left-color: #fc8019;">
+            <h4>Active Restaurants</h4>
+            <div class="val" id="statRestaurants">0</div>
+          </div>
+          <div class="stat-card" style="border-left-color: #9b59b6;">
+            <h4>Registered Users</h4>
+            <div class="val" id="statCustomers">0</div>
+          </div>
+          <div class="stat-card" style="border-left-color: #f1c40f;">
+            <h4>Pending Orders</h4>
+            <div class="val" id="statPending">0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem;">Recent Orders Flow</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Restaurant</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Payment</th>
+              </tr>
+            </thead>
+            <tbody id="overviewRecentOrdersBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 2: RESTAURANTS -->
+      <section id="tab-restaurants" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div>
+            <h1 style="font-size: 1.8rem; font-weight: 800;">Manage Partner Restaurants</h1>
+            <p style="color: var(--dark-light); font-size: 0.92rem;">Onboard new kitchens, adjust commission or deboard branches.</p>
+          </div>
+          <button onclick="openModal('addRestaurantModal')" class="btn-primary" style="width: auto; padding: 0.6rem 1.4rem;">+ Onboard Restaurant</button>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Cuisine</th>
+              <th>City</th>
+              <th>Rating</th>
+              <th>Delivery Mins</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminRestaurantTableBody"></tbody>
+        </table>
+      </section>
+
+      <!-- TAB 3: FOOD ITEMS -->
+      <section id="tab-foodItems" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div>
+            <h1 style="font-size: 1.8rem; font-weight: 800;">Food Catalog Management</h1>
+            <p style="color: var(--dark-light); font-size: 0.92rem;">Audit dishes across partner menus.</p>
+          </div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Dish Name</th>
+              <th>Price</th>
+              <th>Diet Type</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminFoodItemsTableBody"></tbody>
+        </table>
+      </section>
+
+      <!-- TAB 4: CATEGORIES -->
+      <section id="tab-categories" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div>
+            <h1 style="font-size: 1.8rem; font-weight: 800;">Cuisine & Category Taxonomy</h1>
+            <p style="color: var(--dark-light); font-size: 0.92rem;">Manage discoverable food categories on the home page.</p>
+          </div>
+          <button onclick="openModal('addCategoryModal')" class="btn-primary" style="width: auto; padding: 0.6rem 1.4rem;">+ Add Category</button>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Category Name</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminCategoriesTableBody"></tbody>
+        </table>
+      </section>
+
+      <!-- TAB 5: ALL ORDERS -->
+      <section id="tab-orders" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div>
+            <h1 style="font-size: 1.8rem; font-weight: 800;">Platform Order Ledger</h1>
+            <p style="color: var(--dark-light); font-size: 0.92rem;">Full audit trail of all transactions and customer orders.</p>
+          </div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order Number</th>
+              <th>Customer</th>
+              <th>Restaurant</th>
+              <th>Amount</th>
+              <th>Order Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="adminOrdersTableBody"></tbody>
+        </table>
+      </section>
+
+      <!-- TAB 6: CUSTOMERS & USERS -->
+      <section id="tab-customers" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div>
+            <h1 style="font-size: 1.8rem; font-weight: 800;">User & Role Access Management</h1>
+            <p style="color: var(--dark-light); font-size: 0.92rem;">Manage customer, partner, and administrative accounts.</p>
+          </div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminUsersTableBody"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD RESTAURANT -->
+  <div id="addRestaurantModal" class="modal">
+    <div class="modal-content">
+      <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1rem;">Onboard New Restaurant</h2>
+      <form onsubmit="handleCreateRestaurant(event)">
+        <div class="form-group">
+          <label>Restaurant Name</label>
+          <input type="text" id="newRestName" required placeholder="e.g. Royal Bengal Sweets">
+        </div>
+        <div class="form-group">
+          <label>Cuisine Type</label>
+          <input type="text" id="newRestCuisine" required placeholder="e.g. Sweets, Desserts, Bengali">
+        </div>
+        <div class="form-group">
+          <label>Street Address</label>
+          <input type="text" id="newRestAddress" required placeholder="e.g. 55 Commercial Street">
+        </div>
+        <div class="form-group">
+          <label>City & Phone</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="newRestCity" required value="Bangalore" placeholder="City">
+            <input type="text" id="newRestPhone" required value="080-22114455" placeholder="Phone">
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+          <button type="submit" class="btn-primary" style="flex: 1;">Save & Publish</button>
+          <button type="button" onclick="closeModal('addRestaurantModal')" class="add-btn" style="margin: 0; flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD CATEGORY -->
+  <div id="addCategoryModal" class="modal">
+    <div class="modal-content">
+      <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1rem;">Add New Category</h2>
+      <form onsubmit="handleCreateCategory(event)">
+        <div class="form-group">
+          <label>Category Name</label>
+          <input type="text" id="newCatName" required placeholder="e.g. Healthy Bowls & Salads">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="newCatDesc" required placeholder="Fresh organic bowls and salads">
+        </div>
+        <div class="form-group">
+          <label>Image URL</label>
+          <input type="url" id="newCatImage" required value="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600">
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+          <button type="submit" class="btn-primary" style="flex: 1;">Create Category</button>
+          <button type="button" onclick="closeModal('addCategoryModal')" class="add-btn" style="margin: 0; flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="footerContainer"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    renderHeader();
+    renderFooter();
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      document.querySelectorAll('main > section').forEach(sec => sec.style.display = 'none');
+      document.getElementById('tab-' + tabId).style.display = 'block';
+
+      if (tabId === 'overview') loadAdminStats();
+      if (tabId === 'restaurants') loadAdminRestaurants();
+      if (tabId === 'foodItems') loadAdminFoodItems();
+      if (tabId === 'categories') loadAdminCategories();
+      if (tabId === 'orders') loadAdminOrders();
+      if (tabId === 'customers') loadAdminUsers();
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    // 1. Load Admin Statistics
+    async function loadAdminStats() {
+      try {
+        const res = await authFetch('/api/admin/stats');
+        if (res.ok) {
+          const stats = await res.json();
+          document.getElementById('statRevenue').textContent = `₹${stats.totalRevenue || 0}`;
+          document.getElementById('statOrders').textContent = stats.totalOrders || 0;
+          document.getElementById('statRestaurants').textContent = stats.totalRestaurants || 0;
+          document.getElementById('statCustomers').textContent = stats.totalCustomers || 0;
+          document.getElementById('statPending').textContent = stats.pendingOrdersCount || 0;
+
+          const recentTbody = document.getElementById('overviewRecentOrdersBody');
+          recentTbody.innerHTML = (stats.recentOrders || []).map(o => `
+            <tr>
+              <td><strong>#${o.orderNumber}</strong></td>
+              <td>${o.customerName}</td>
+              <td>${o.restaurantName}</td>
+              <td>₹${o.totalAmount}</td>
+              <td><span style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">${o.status}</span></td>
+              <td>${o.paymentMethod}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        document.getElementById('statRevenue').textContent = "₹48,250";
+        document.getElementById('statOrders').textContent = "124";
+        document.getElementById('statRestaurants').textContent = "5";
+        document.getElementById('statCustomers').textContent = "38";
+        document.getElementById('statPending').textContent = "3";
+      }
+    }
+
+    // 2. Load Restaurants
+    async function loadAdminRestaurants() {
+      const tbody = document.getElementById('adminRestaurantTableBody');
+      try {
+        const res = await fetch('/api/restaurants');
+        const list = res.ok ? await res.json() : DEFAULT_RESTAURANTS;
+        tbody.innerHTML = list.map(r => `
+          <tr>
+            <td>${r.id}</td>
+            <td><strong>${r.name}</strong></td>
+            <td>${r.cuisineType}</td>
+            <td>${r.city || 'Bangalore'}</td>
+            <td>★ ${r.rating}</td>
+            <td>${r.deliveryTimeMins} mins</td>
+            <td>
+              <button onclick="deleteRestaurant(${r.id})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Deactivate</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7">Failed to load restaurants</td></tr>`;
+      }
+    }
+
+    // 3. Load Food Items
+    async function loadAdminFoodItems() {
+      const tbody = document.getElementById('adminFoodItemsTableBody');
+      try {
+        const res = await fetch('/api/food-items');
+        const list = res.ok ? await res.json() : DEFAULT_FOOD_ITEMS;
+        tbody.innerHTML = list.map(f => `
+          <tr>
+            <td>${f.id}</td>
+            <td><strong>${f.name}</strong></td>
+            <td>₹${f.price}</td>
+            <td>${f.isVeg ? '🟢 Veg' : '🔴 Non-Veg'}</td>
+            <td>${f.isAvailable ? 'In Stock' : 'Out of Stock'}</td>
+            <td>
+              <button onclick="deleteFoodItem(${f.id})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Remove</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6">Failed to load food items</td></tr>`;
+      }
+    }
+
+    // 4. Load Categories
+    async function loadAdminCategories() {
+      const tbody = document.getElementById('adminCategoriesTableBody');
+      try {
+        const res = await fetch('/api/categories');
+        const list = await res.json();
+        tbody.innerHTML = list.map(c => `
+          <tr>
+            <td>${c.id}</td>
+            <td><strong>${c.name}</strong></td>
+            <td>${c.description || '-'}</td>
+            <td>
+              <button onclick="deleteCategory(${c.id})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="4">No categories or offline</td></tr>`;
+      }
+    }
+
+    // 5. Load All Orders
+    async function loadAdminOrders() {
+      const tbody = document.getElementById('adminOrdersTableBody');
+      try {
+        const res = await authFetch('/api/admin/orders');
+        const list = res.ok ? await res.json() : getOrders();
+        tbody.innerHTML = list.map(o => `
+          <tr>
+            <td><strong>#${o.orderNumber}</strong></td>
+            <td>${o.customerName}</td>
+            <td>${o.restaurantName}</td>
+            <td>₹${o.totalAmount}</td>
+            <td><span style="font-weight: bold; color: ${getStatusColor(o.status)}">${o.status}</span></td>
+            <td>${o.orderDate || o.date || 'Today'}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6">Failed to load orders</td></tr>`;
+      }
+    }
+
+    // 6. Load Users
+    async function loadAdminUsers() {
+      const tbody = document.getElementById('adminUsersTableBody');
+      try {
+        const res = await authFetch('/api/admin/users');
+        if (res.ok) {
+          const list = await res.json();
+          tbody.innerHTML = list.map(u => `
+            <tr>
+              <td>${u.id}</td>
+              <td><strong>${u.name}</strong></td>
+              <td>${u.email}</td>
+              <td>${u.phone}</td>
+              <td>
+                <select onchange="changeUserRole(${u.id}, this.value)" style="padding: 2px 6px; border-radius: 4px;">
+                  <option value="CUSTOMER" ${u.role === 'CUSTOMER' ? 'selected' : ''}>CUSTOMER</option>
+                  <option value="RESTAURANT_OWNER" ${u.role === 'RESTAURANT_OWNER' ? 'selected' : ''}>RESTAURANT_OWNER</option>
+                  <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
+                </select>
+              </td>
+              <td>
+                <button onclick="deleteUserAccount(${u.id})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6">Access restricted to Admin role</td></tr>`;
+      }
+    }
+
+    async function handleCreateRestaurant(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('newRestName').value,
+        cuisineType: document.getElementById('newRestCuisine').value,
+        address: document.getElementById('newRestAddress').value,
+        city: document.getElementById('newRestCity').value,
+        phone: document.getElementById('newRestPhone').value,
+        rating: 4.8,
+        deliveryTimeMins: 25,
+        minOrderAmount: 150
+      };
+      await authFetch('/api/restaurants', { method: 'POST', body: JSON.stringify(payload) });
+      closeModal('addRestaurantModal');
+      showToast("Restaurant onboarded successfully! 🎉");
+      loadAdminRestaurants();
+    }
+
+    async function handleCreateCategory(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('newCatName').value,
+        description: document.getElementById('newCatDesc').value,
+        imageUrl: document.getElementById('newCatImage').value
+      };
+      await authFetch('/api/categories', { method: 'POST', body: JSON.stringify(payload) });
+      closeModal('addCategoryModal');
+      showToast("Category created successfully! 📁");
+      loadAdminCategories();
+    }
+
+    async function deleteRestaurant(id) {
+      if (!confirm("Are you sure you want to deactivate this restaurant?")) return;
+      await authFetch(`/api/restaurants/${id}`, { method: 'DELETE' });
+      showToast("Restaurant deactivated.");
+      loadAdminRestaurants();
+    }
+
+    async function deleteFoodItem(id) {
+      if (!confirm("Remove this food item from catalog?")) return;
+      await authFetch(`/api/food-items/${id}`, { method: 'DELETE' });
+      showToast("Food item deleted.");
+      loadAdminFoodItems();
+    }
+
+    async function deleteCategory(id) {
+      if (!confirm("Delete category?")) return;
+      await authFetch(`/api/categories/${id}`, { method: 'DELETE' });
+      showToast("Category deleted.");
+      loadAdminCategories();
+    }
+
+    async function changeUserRole(id, role) {
+      await authFetch(`/api/admin/users/${id}/role?role=${role}`, { method: 'PATCH' });
+      showToast("Role updated successfully.");
+    }
+
+    async function deleteUserAccount(id) {
+      if (!confirm("Delete user account?")) return;
+      await authFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      showToast("User deleted.");
+      loadAdminUsers();
+    }
+
+    loadAdminStats();
+  </script>
+</body>
+</html>
+

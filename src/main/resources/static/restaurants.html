@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodieExpress - All Restaurants</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div id="navbarContainer"></div>
+
+  <main class="container">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">Restaurants with Online Delivery</h1>
+      <p style="color: var(--dark-light);">Explore the finest cuisines and cafes delivering to your location.</p>
+    </div>
+
+    <!-- Filter & Sort Bar -->
+    <div style="background: white; padding: 1rem 1.5rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+      <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+        <button class="add-btn" style="margin: 0;" onclick="filterQuick('ALL')">All</button>
+        <button class="add-btn" style="margin: 0;" onclick="filterQuick('RATING')">Ratings 4.5+</button>
+        <button class="add-btn" style="margin: 0;" onclick="filterQuick('FAST')">Fast Delivery (&le;25 mins)</button>
+        <button class="add-btn" style="margin: 0;" onclick="filterQuick('VEG')">Pure Veg / North Indian</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <label style="font-size: 0.88rem; font-weight: 600;">Sort By:</label>
+        <select id="sortSelect" onchange="applySorting()" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--card-border);">
+          <option value="RELEVANCE">Relevance</option>
+          <option value="RATING_DESC">Rating: High to Low</option>
+          <option value="TIME_ASC">Delivery Time: Fastest First</option>
+          <option value="PRICE_ASC">Cost: Low to High</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Restaurant Grid -->
+    <div id="restaurantGrid" class="restaurant-grid">
+      <!-- Dynamically populated -->
+    </div>
+  </main>
+
+  <div id="footerContainer"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    renderHeader('restaurants');
+    renderFooter();
+
+    let restaurantsData = [];
+
+    async function initPage() {
+      try {
+        const res = await fetch('/api/restaurants');
+        if (res.ok) {
+          const data = await res.json();
+          restaurantsData = (data && data.length > 0) ? data : DEFAULT_RESTAURANTS;
+        } else {
+          restaurantsData = DEFAULT_RESTAURANTS;
+        }
+      } catch (e) {
+        restaurantsData = DEFAULT_RESTAURANTS;
+      }
+
+      // Check URL query parameters for search
+      const urlParams = new URLSearchParams(window.location.search);
+      const search = urlParams.get('search');
+      if (search) {
+        filterBySearch(search);
+      } else {
+        renderList(restaurantsData);
+      }
+    }
+
+    function renderList(list) {
+      const grid = document.getElementById('restaurantGrid');
+      grid.innerHTML = '';
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem;">
+            <p style="font-size: 3rem;">🔍</p>
+            <h3 style="font-size: 1.4rem; font-weight: 700; margin: 0.8rem 0 0.4rem 0;">No matching restaurants found</h3>
+            <p style="color: var(--dark-light);">Try searching for a different cuisine or dish.</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'restaurant-card';
+        card.onclick = () => window.location.href = `menu.html?id=${r.id}`;
+        card.innerHTML = `
+          <div class="card-img-wrap">
+            <img src="${r.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600'}" alt="${r.name}">
+            <span class="discount-badge">Flat ₹125 OFF</span>
+          </div>
+          <div class="card-body">
+            <h3 class="restaurant-title">${r.name}</h3>
+            <p class="cuisine-tags">${r.cuisineType}</p>
+            <p style="font-size: 0.82rem; color: var(--dark-light); margin-bottom: 0.8rem;">📍 ${r.address || 'Bangalore'}</p>
+            <div class="card-meta">
+              <span class="rating-badge">★ ${r.rating}</span>
+              <span class="delivery-time">⏳ ${r.deliveryTimeMins} MINS</span>
+              <span>₹${r.minOrderAmount} FOR TWO</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function filterBySearch(keyword) {
+      const q = keyword.toLowerCase();
+      const filtered = restaurantsData.filter(r =>
+        r.name.toLowerCase().includes(q) ||
+        r.cuisineType.toLowerCase().includes(q) ||
+        r.address.toLowerCase().includes(q)
+      );
+      renderList(filtered);
+    }
+
+    function filterQuick(type) {
+      if (type === 'ALL') renderList(restaurantsData);
+      if (type === 'RATING') renderList(restaurantsData.filter(r => r.rating >= 4.6));
+      if (type === 'FAST') renderList(restaurantsData.filter(r => r.deliveryTimeMins <= 25));
+      if (type === 'VEG') renderList(restaurantsData.filter(r => r.cuisineType.toLowerCase().includes('biryani') || r.cuisineType.toLowerCase().includes('indian')));
+    }
+
+    function applySorting() {
+      const sortVal = document.getElementById('sortSelect').value;
+      let sorted = [...restaurantsData];
+      if (sortVal === 'RATING_DESC') sorted.sort((a, b) => b.rating - a.rating);
+      if (sortVal === 'TIME_ASC') sorted.sort((a, b) => a.deliveryTimeMins - b.deliveryTimeMins);
+      if (sortVal === 'PRICE_ASC') sorted.sort((a, b) => a.minOrderAmount - b.minOrderAmount);
+      renderList(sorted);
+    }
+
+    initPage();
+  </script>
+</body>
+</html>
+

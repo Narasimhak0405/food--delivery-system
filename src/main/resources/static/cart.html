@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodieExpress - Shopping Cart</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div id="navbarContainer"></div>
+
+  <main class="container">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.4rem;">Your Shopping Cart 🛒</h1>
+      <p style="color: var(--dark-light);">Review your chosen dishes, apply coupons, and checkout.</p>
+    </div>
+
+    <div class="cart-layout" id="cartContent">
+      <!-- Dynamically Rendered -->
+    </div>
+  </main>
+
+  <div id="footerContainer"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    renderHeader('cart');
+    renderFooter();
+
+    function renderCartPage() {
+      const container = document.getElementById('cartContent');
+      const cart = getCart();
+
+      if (cart.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 4.5rem 1rem; background: white; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🍽️</div>
+            <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.6rem;">Your Cart is Empty</h2>
+            <p style="color: var(--dark-light); margin-bottom: 2rem;">Looks like you haven't added anything to your cart yet.</p>
+            <a href="restaurants.html" class="btn-primary" style="display: inline-block; width: auto; padding: 0.85rem 2rem;">Explore Restaurants</a>
+          </div>
+        `;
+        return;
+      }
+
+      const { itemTotal, deliveryFee, platformFee, taxAmount, grandTotal } = getCartCalculations();
+
+      container.innerHTML = `
+        <!-- Left: Cart Items List -->
+        <div>
+          <div class="card">
+            <h2 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 1.2rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.6rem;">Items in Cart (${cart.length})</h2>
+            <div id="cartItemsList">
+              ${cart.map(item => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--card-border);">
+                  <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div class="${item.isVeg ? 'veg-icon' : 'nonveg-icon'}" style="margin: 0;">
+                      <div class="circle"></div>
+                    </div>
+                    <div>
+                      <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.2rem;">${item.name}</h4>
+                      <div style="font-size: 0.88rem; color: var(--dark-light);">₹${item.price} each</div>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <div class="qty-counter" style="margin: 0;">
+                      <button onclick="changeQty(${item.id}, -1)">−</button>
+                      <span>${item.quantity}</span>
+                      <button onclick="changeQty(${item.id}, 1)">+</button>
+                    </div>
+                    <div style="font-weight: 800; min-width: 60px; text-align: right;">
+                      ₹${item.price * item.quantity}
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Coupon Card -->
+          <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+              <span style="font-size: 1.6rem;">🎟️</span>
+              <div>
+                <strong style="font-size: 0.95rem;">FOODIE50 Applied</strong>
+                <p style="font-size: 0.82rem; color: #2ecc71;">₹50 discount unlocked!</p>
+              </div>
+            </div>
+            <span style="font-size: 0.85rem; font-weight: bold; color: var(--secondary); cursor: pointer;">REMOVE</span>
+          </div>
+        </div>
+
+        <!-- Right: Bill Details -->
+        <div>
+          <div class="card">
+            <h2 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 1.2rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.6rem;">Bill Details</h2>
+
+            <div class="bill-row">
+              <span>Item Total</span>
+              <span>₹${itemTotal}</span>
+            </div>
+            <div class="bill-row">
+              <span>Delivery Fee</span>
+              <span>₹${deliveryFee}</span>
+            </div>
+            <div class="bill-row">
+              <span>Platform Fee</span>
+              <span>₹${platformFee}</span>
+            </div>
+            <div class="bill-row">
+              <span>GST & Restaurant Charges</span>
+              <span>₹${taxAmount}</span>
+            </div>
+
+            <div class="bill-row total">
+              <span>TO PAY</span>
+              <span style="color: var(--primary);">₹${grandTotal}</span>
+            </div>
+
+            <button onclick="window.location.href='checkout.html'" class="btn-primary" style="margin-top: 1.5rem;">
+              Proceed to Checkout &rarr;
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function changeQty(itemId, delta) {
+      updateCartQuantity(itemId, delta);
+      renderCartPage();
+    }
+
+    renderCartPage();
+  </script>
+</body>
+</html>
+

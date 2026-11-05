@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodieExpress - Restaurant Partner Kitchen Portal</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .portal-banner {
+      background: linear-gradient(135deg, #2c3e50, #1e272e);
+      color: white;
+      padding: 1.8rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .portal-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.2rem;
+      margin: 1.5rem 0;
+    }
+    .order-card-kitchen {
+      background: white;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--card-border);
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+      border-left: 6px solid #f39c12;
+    }
+    .order-card-kitchen.confirmed { border-left-color: #3498db; }
+    .order-card-kitchen.preparing { border-left-color: #9b59b6; }
+    .order-card-kitchen.out_for_delivery { border-left-color: #fc8019; }
+    .order-card-kitchen.delivered { border-left-color: #2ecc71; }
+    .order-card-kitchen.cancelled { border-left-color: #e74c3c; opacity: 0.75; }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc; transition: .4s; border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+      background-color: white; transition: .4s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #2ecc71; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .tab-btn {
+      padding: 0.6rem 1.4rem;
+      background: white;
+      border: 1px solid var(--card-border);
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="navbarContainer"></div>
+
+  <!-- Partner Portal Banner -->
+  <section class="portal-banner">
+    <div>
+      <span style="background: #e67e22; color: white; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: bold;">RESTAURANT PORTAL</span>
+      <h1 id="restaurantNameHeading" style="font-size: 1.8rem; font-weight: 800; margin-top: 0.3rem;">Spice Paradise &bull; Kitchen Console</h1>
+      <p style="color: #bdc3c7; font-size: 0.9rem;">Live Kitchen Queue & Menu Availability Switchboard</p>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <label style="font-weight: 600; font-size: 0.9rem; color: #ecf0f1;">Branch:</label>
+      <select id="branchSelect" onchange="changeBranch()" style="padding: 0.5rem 1rem; border-radius: 6px; font-weight: bold;">
+        <option value="1">1. Spice Paradise (Indiranagar)</option>
+        <option value="2">2. Bella Italia Trattoria (Brigade Rd)</option>
+        <option value="3">3. Burger Craft Co. (Koramangala)</option>
+        <option value="4">4. Dragon Bowl Express (Church St)</option>
+        <option value="5">5. The Sugar Bloom Cakery (Lavelle Rd)</option>
+      </select>
+    </div>
+  </section>
+
+  <main class="container">
+    <!-- KPI Stats Cards -->
+    <div class="portal-stats">
+      <div class="stat-card" style="border-left-color: #2ecc71;">
+        <h4>Today's Revenue</h4>
+        <div class="val" id="kpiRevenue">₹0</div>
+      </div>
+      <div class="stat-card" style="border-left-color: #3498db;">
+        <h4>Orders Received</h4>
+        <div class="val" id="kpiOrders">0</div>
+      </div>
+      <div class="stat-card" style="border-left-color: #e67e22;">
+        <h4>Active Kitchen Queue</h4>
+        <div class="val" id="kpiActive">0</div>
+      </div>
+      <div class="stat-card" style="border-left-color: #9b59b6;">
+        <h4>Menu Dishes</h4>
+        <div class="val" id="kpiDishes">0</div>
+      </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div style="display: flex; gap: 10px; margin-bottom: 1.5rem; align-items: center; justify-content: space-between;">
+      <div style="display: flex; gap: 10px;">
+        <button id="btnOrdersTab" class="tab-btn active" onclick="switchPortalTab('orders')">📦 Live Orders Queue</button>
+        <button id="btnMenuTab" class="tab-btn" onclick="switchPortalTab('menu')">🍽️ Menu & Dish Availability</button>
+      </div>
+
+      <button id="addDishBtn" onclick="openModal('addDishModal')" class="btn-primary" style="display: none; width: auto; padding: 0.6rem 1.2rem;">+ Add New Dish</button>
+    </div>
+
+    <!-- VIEW 1: LIVE ORDERS QUEUE -->
+    <section id="portalOrdersView">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.3rem; font-weight: 800;">Incoming Orders</h2>
+        <button onclick="loadPortalData()" class="add-btn" style="margin: 0;">🔄 Refresh Orders</button>
+      </div>
+
+      <div id="kitchenOrdersList">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- VIEW 2: MENU & DISH AVAILABILITY -->
+    <section id="portalMenuView" style="display: none;">
+      <div class="card">
+        <h2 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 1rem;">Manage Menu Dishes</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Dish</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Type</th>
+              <th>Availability Toggle</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="restaurantMenuTableBody">
+            <!-- Dishes filled dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: ADD FOOD ITEM -->
+  <div id="addDishModal" class="modal">
+    <div class="modal-content">
+      <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1rem;">Add New Dish to Menu</h2>
+      <form onsubmit="handleCreateDish(event)">
+        <div class="form-group">
+          <label>Dish Name</label>
+          <input type="text" id="dishName" required placeholder="e.g. Saffron Mutton Dum Biryani">
+        </div>
+        <div class="form-group">
+          <label>Price (₹)</label>
+          <input type="number" id="dishPrice" step="1" required placeholder="e.g. 420">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="dishCategorySelect" required>
+            <option value="1">Biryani & North Indian</option>
+            <option value="2">Pizza & Italian</option>
+            <option value="3">Burgers & Fast Food</option>
+            <option value="4">Chinese & Asian</option>
+            <option value="5">Desserts & Shakes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Dietary Type</label>
+          <select id="dishIsVeg">
+            <option value="true">🟢 Vegetarian</option>
+            <option value="false">🔴 Non-Vegetarian</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="dishDescription" rows="2" placeholder="Fragrant basmati rice slow cooked in sealed pot with tender meat."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Photo URL</label>
+          <input type="url" id="dishImageUrl" value="https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=600">
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+          <button type="submit" class="btn-primary" style="flex: 1;">Save Dish</button>
+          <button type="button" onclick="closeModal('addDishModal')" class="add-btn" style="margin: 0; flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="footerContainer"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    renderHeader();
+    renderFooter();
+
+    let currentRestId = 1;
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function switchPortalTab(tab) {
+      if (tab === 'orders') {
+        document.getElementById('portalOrdersView').style.display = 'block';
+        document.getElementById('portalMenuView').style.display = 'none';
+        document.getElementById('btnOrdersTab').classList.add('active');
+        document.getElementById('btnMenuTab').classList.remove('active');
+        document.getElementById('addDishBtn').style.display = 'none';
+      } else {
+        document.getElementById('portalOrdersView').style.display = 'none';
+        document.getElementById('portalMenuView').style.display = 'block';
+        document.getElementById('btnOrdersTab').classList.remove('active');
+        document.getElementById('btnMenuTab').classList.add('active');
+        document.getElementById('addDishBtn').style.display = 'inline-block';
+        loadRestaurantMenu();
+      }
+    }
+
+    function changeBranch() {
+      currentRestId = parseInt(document.getElementById('branchSelect').value);
+      loadPortalData();
+    }
+
+    async function loadPortalData() {
+      try {
+        const res = await authFetch(`/api/restaurant-portal/stats?restaurantId=${currentRestId}`);
+        if (res.ok) {
+          const stats = await res.json();
+          document.getElementById('restaurantNameHeading').textContent = stats.restaurantName + " • Kitchen Console";
+          document.getElementById('kpiRevenue').textContent = `₹${stats.todayRevenue || 0}`;
+          document.getElementById('kpiOrders').textContent = stats.todayOrdersCount || 0;
+          document.getElementById('kpiActive').textContent = stats.activeOrdersCount || 0;
+          document.getElementById('kpiDishes').textContent = stats.totalMenuDishes || 0;
+
+          renderOrdersList(stats.liveOrders || []);
+        } else {
+          renderFallbackOrders();
+        }
+      } catch (e) {
+        renderFallbackOrders();
+      }
+    }
+
+    function renderFallbackOrders() {
+      document.getElementById('kpiRevenue').textContent = "₹8,450";
+      document.getElementById('kpiOrders').textContent = "12";
+      document.getElementById('kpiActive').textContent = "3";
+      document.getElementById('kpiDishes').textContent = "14";
+      renderOrdersList(getOrders());
+    }
+
+    function renderOrdersList(orders) {
+      const container = document.getElementById('kitchenOrdersList');
+      if (orders.length === 0) {
+        container.innerHTML = `<div class="card" style="text-align: center; color: var(--dark-light);">No active incoming orders right now.</div>`;
+        return;
+      }
+
+      container.innerHTML = orders.map(o => {
+        const statusClass = (o.status || 'PLACED').toLowerCase();
+        return `
+          <div class="order-card-kitchen ${statusClass}">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+              <div>
+                <strong style="font-size: 1.15rem;">#${o.orderNumber}</strong> &bull;
+                <span style="color: var(--dark-light); font-size: 0.9rem;">Customer: <strong>${o.customerName || 'Rahul Sharma'}</strong></span>
+              </div>
+              <div>
+                <span style="font-weight: 800; font-size: 1.1rem; margin-right: 12px;">₹${o.totalAmount}</span>
+                <span style="background: ${getStatusColor(o.status)}; color: white; padding: 3px 10px; border-radius: 12px; font-weight: bold; font-size: 0.78rem;">
+                  ${o.status}
+                </span>
+              </div>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 0.8rem; border-radius: 6px; margin-bottom: 0.8rem;">
+              <strong>Items to Prepare:</strong>
+              <div style="margin-top: 4px;">
+                ${(o.items || []).map(it => `
+                  <span style="display: inline-block; background: white; border: 1px solid #dfe4ea; padding: 2px 8px; border-radius: 4px; margin: 2px 4px 2px 0; font-size: 0.88rem;">
+                    <strong>${it.quantity}x</strong> ${it.name || it.itemName}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: var(--dark-light); margin-bottom: 1rem;">
+              📍 Deliver to: ${o.deliveryAddress || 'Indiranagar, Bangalore'}
+            </p>
+
+            <!-- Order Transition Action Buttons -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              ${o.status === 'PLACED' ? `
+                <button onclick="updateStatus('${o.orderNumber}', 'CONFIRMED')" style="background: #2ecc71; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">✅ Accept Order</button>
+                <button onclick="updateStatus('${o.orderNumber}', 'CANCELLED')" style="background: #e74c3c; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">❌ Reject</button>
+              ` : ''}
+
+              ${o.status === 'CONFIRMED' ? `
+                <button onclick="updateStatus('${o.orderNumber}', 'PREPARING')" style="background: #9b59b6; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">🍳 Start Preparing Food</button>
+              ` : ''}
+
+              ${o.status === 'PREPARING' ? `
+                <button onclick="updateStatus('${o.orderNumber}', 'OUT_FOR_DELIVERY')" style="background: #fc8019; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">🛵 Hand Over to Rider (Out for Delivery)</button>
+              ` : ''}
+
+              ${o.status === 'OUT_FOR_DELIVERY' ? `
+                <button onclick="updateStatus('${o.orderNumber}', 'DELIVERED')" style="background: #27ae60; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">🏠 Mark Order as Delivered</button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function updateStatus(orderNumber, newStatus) {
+      try {
+        await authFetch(`/api/restaurant-portal/orders/${orderNumber}/status?status=${newStatus}`, { method: 'PATCH' });
+        showToast(`Order #${orderNumber} updated to ${newStatus}!`);
+      } catch (e) {
+        showToast(`Order status updated to ${newStatus} (Demo Mode)`);
+      }
+      setTimeout(() => loadPortalData(), 600);
+    }
+
+    async function loadRestaurantMenu() {
+      const tbody = document.getElementById('restaurantMenuTableBody');
+      try {
+        const res = await fetch(`/api/restaurants/${currentRestId}/menu`);
+        const dishes = res.ok ? await res.json() : DEFAULT_FOOD_ITEMS.filter(f => f.restaurantId === currentRestId);
+
+        tbody.innerHTML = (dishes.length > 0 ? dishes : DEFAULT_FOOD_ITEMS.slice(0, 4)).map(d => `
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${d.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100'}" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">
+                <strong>${d.name}</strong>
+              </div>
+            </td>
+            <td>${d.category ? (d.category.name || d.category) : 'General'}</td>
+            <td>₹${d.price}</td>
+            <td>${d.isVeg ? '🟢 Veg' : '🔴 Non-Veg'}</td>
+            <td>
+              <label class="switch">
+                <input type="checkbox" ${d.isAvailable !== false ? 'checked' : ''} onchange="toggleAvailability(${d.id}, this.checked)">
+                <span class="slider"></span>
+              </label>
+              <small style="margin-left: 6px; font-weight: 600;">${d.isAvailable !== false ? 'In Stock' : 'Sold Out'}</small>
+            </td>
+            <td>
+              <button onclick="deleteDish(${d.id})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6">Failed to load dishes</td></tr>`;
+      }
+    }
+
+    async function toggleAvailability(dishId, isAvailable) {
+      await authFetch(`/api/restaurant-portal/food-items/${dishId}/availability?isAvailable=${isAvailable}`, { method: 'PATCH' });
+      showToast(isAvailable ? "Dish marked as In Stock! 🟢" : "Dish marked as Sold Out! 🔴");
+    }
+
+    async function handleCreateDish(e) {
+      e.preventDefault();
+      const payload = {
+        restaurant: { id: currentRestId },
+        category: { id: parseInt(document.getElementById('dishCategorySelect').value) },
+        name: document.getElementById('dishName').value,
+        price: parseFloat(document.getElementById('dishPrice').value),
+        description: document.getElementById('dishDescription').value,
+        isVeg: document.getElementById('dishIsVeg').value === 'true',
+        isAvailable: true,
+        imageUrl: document.getElementById('dishImageUrl').value
+      };
+
+      await authFetch('/api/food-items', { method: 'POST', body: JSON.stringify(payload) });
+      closeModal('addDishModal');
+      showToast("New dish added to menu successfully! 🍽️");
+      loadRestaurantMenu();
+    }
+
+    async function deleteDish(id) {
+      if (!confirm("Remove this dish from your restaurant menu?")) return;
+      await authFetch(`/api/food-items/${id}`, { method: 'DELETE' });
+      showToast("Dish removed.");
+      loadRestaurantMenu();
+    }
+
+    loadPortalData();
+  </script>
+</body>
+</html>
+

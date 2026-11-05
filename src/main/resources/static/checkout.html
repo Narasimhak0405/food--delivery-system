@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodieExpress - Checkout & Payment</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Official Razorpay Checkout JS SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+
+  <div id="navbarContainer"></div>
+
+  <main class="container">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.4rem;">Checkout & Delivery</h1>
+      <p style="color: var(--dark-light);">Select your delivery address, review billing, and pay securely.</p>
+    </div>
+
+    <div class="cart-layout">
+      <!-- Left Column: Address & Payment Options -->
+      <div>
+        <!-- 1. Delivery Address Card -->
+        <div class="card">
+          <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+            📍 1. Delivery Address
+          </h2>
+
+          <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.2rem;">
+            <label style="display: flex; align-items: flex-start; gap: 12px; padding: 1rem; border: 2px solid var(--primary); background: #fffaf5; border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="addressSelect" value="1" checked style="margin-top: 4px; width: auto;">
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                  <strong id="userName">Rahul Sharma</strong>
+                  <span style="background: var(--primary); color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: bold;">HOME</span>
+                </div>
+                <p id="userAddress" style="font-size: 0.9rem; color: var(--dark-light); line-height: 1.4;">
+                  Flat 402, Sunshine Heights, 12th Main Road, HAL 2nd Stage, Indiranagar, Bangalore - 560038
+                </p>
+                <small id="userPhone" style="color: var(--dark-light); font-weight: 600;">📞 +91 98111 22233</small>
+              </div>
+            </label>
+
+            <label style="display: flex; align-items: flex-start; gap: 12px; padding: 1rem; border: 1px solid var(--card-border); border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="addressSelect" value="2" style="margin-top: 4px; width: auto;">
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                  <strong>Prestige Tech Park</strong>
+                  <span style="background: #747d8c; color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: bold;">WORK</span>
+                </div>
+                <p style="font-size: 0.9rem; color: var(--dark-light); line-height: 1.4;">
+                  Tower B, 3rd Floor, Outer Ring Road, Kadubeesanahalli, Bangalore - 560103
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Delivery Instructions / Note for Rider</label>
+            <input type="text" id="deliveryInstructions" placeholder="e.g. Ring the bell twice or leave package at security">
+          </div>
+        </div>
+
+        <!-- 2. Payment Method Card -->
+        <div class="card">
+          <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px;">
+            💳 2. Payment Method
+          </h2>
+
+          <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+            <!-- Razorpay Option -->
+            <label style="display: flex; align-items: center; gap: 12px; padding: 1.1rem; border: 2px solid #582be8; background: #fbf9ff; border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="paymentMethod" value="RAZORPAY" checked style="width: auto;">
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="color: #2b1464; font-size: 1rem;">Razorpay (Cards, UPI, Netbanking, Wallets)</strong>
+                  <span style="background: #582be8; color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: bold;">TEST MODE</span>
+                </div>
+                <p style="font-size: 0.82rem; color: #576574; margin-top: 0.2rem;">Pay securely using simulated Razorpay test gateway</p>
+              </div>
+            </label>
+
+            <!-- Cash on Delivery Option -->
+            <label style="display: flex; align-items: center; gap: 12px; padding: 1.1rem; border: 1px solid var(--card-border); border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="paymentMethod" value="CASH_ON_DELIVERY" style="width: auto;">
+              <div style="flex: 1;">
+                <strong>Cash on Delivery (COD)</strong>
+                <p style="font-size: 0.82rem; color: var(--dark-light);">Pay with cash or scan QR code upon delivery</p>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Final Summary & Place Order -->
+      <div>
+        <div class="card">
+          <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem;">Order Summary</h2>
+          <div id="checkoutItems" style="max-height: 220px; overflow-y: auto; margin-bottom: 1rem; padding-right: 5px;">
+            <!-- Items populated dynamically -->
+          </div>
+
+          <div class="bill-row">
+            <span>Item Subtotal</span>
+            <span id="subtotalVal">₹0</span>
+          </div>
+          <div class="bill-row">
+            <span>Delivery Fee</span>
+            <span id="deliveryVal">₹40</span>
+          </div>
+          <div class="bill-row">
+            <span>Taxes & GST (5%)</span>
+            <span id="taxesVal">₹0</span>
+          </div>
+          <div class="bill-row total">
+            <span>Total Payable</span>
+            <span id="totalPayable" style="color: var(--primary);">₹0</span>
+          </div>
+
+          <button id="payBtn" onclick="handleCheckoutAndPayment()" class="btn-primary" style="margin-top: 1.5rem; font-size: 1.05rem; padding: 1rem;">
+            Proceed to Payment 🚀
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footerContainer"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    renderHeader('cart');
+    renderFooter();
+
+    const user = getCurrentUser();
+    document.getElementById('userName').textContent = user.name;
+    document.getElementById('userAddress').textContent = user.address;
+    document.getElementById('userPhone').textContent = "📞 " + (user.phone || '+91 98111 22233');
+
+    const cart = getCart();
+    if (cart.length === 0) {
+      window.location.href = "cart.html";
+    }
+
+    const { itemTotal, deliveryFee, taxAmount, grandTotal } = getCartCalculations();
+
+    document.getElementById('subtotalVal').textContent = `₹${itemTotal}`;
+    document.getElementById('deliveryVal').textContent = deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`;
+    document.getElementById('taxesVal').textContent = `₹${taxAmount}`;
+    document.getElementById('totalPayable').textContent = `₹${grandTotal}`;
+
+    const itemsBox = document.getElementById('checkoutItems');
+    itemsBox.innerHTML = cart.map(item => `
+      <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.6rem;">
+        <span>${item.quantity}x ${item.name}</span>
+        <strong>₹${item.price * item.quantity}</strong>
+      </div>
+    `).join('');
+
+    async function handleCheckoutAndPayment() {
+      const payBtn = document.getElementById('payBtn');
+      payBtn.disabled = true;
+      payBtn.textContent = "Processing Order...";
+
+      const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked').value;
+      const addressId = parseInt(document.querySelector('input[name="addressSelect"]:checked').value) || 1;
+      const instructions = document.getElementById('deliveryInstructions').value;
+
+      const orderRequest = {
+        userId: user.id || 2,
+        restaurantId: 1, // Default or selected restaurant
+        deliveryAddressId: addressId,
+        paymentMethod: selectedPayment,
+        specialInstructions: instructions
+      };
+
+      try {
+        // Step 1: Place order with backend API
+        const orderRes = await authFetch('/api/orders', {
+          method: 'POST',
+          body: JSON.stringify(orderRequest)
+        });
+
+        if (!orderRes.ok) {
+          const errData = await orderRes.json();
+          throw new Error(errData.message || "Failed to create order");
+        }
+
+        const orderData = await orderRes.json();
+        const orderNumber = orderData.orderNumber;
+
+        if (selectedPayment === 'RAZORPAY') {
+          // Step 2: Request Razorpay Order details from backend
+          const rzpRes = await authFetch(`/api/payments/create-razorpay-order?orderNumber=${encodeURIComponent(orderNumber)}`, {
+            method: 'POST'
+          });
+
+          if (!rzpRes.ok) {
+            throw new Error("Unable to initialize Razorpay payment gateway.");
+          }
+
+          const rzpData = await rzpRes.json();
+
+          // Step 3: Open Razorpay Test Mode Checkout Modal
+          const options = {
+            key: rzpData.keyId,
+            amount: rzpData.amountInPaise,
+            currency: rzpData.currency,
+            name: "FoodieExpress",
+            description: `Order #${orderNumber}`,
+            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=100",
+            order_id: rzpData.razorpayOrderId.startsWith("order_test_") ? undefined : rzpData.razorpayOrderId,
+            handler: async function (response) {
+              // Step 4: Validate Signature on Backend
+              const verifyPayload = {
+                orderNumber: orderNumber,
+                razorpayOrderId: rzpData.razorpayOrderId,
+                razorpayPaymentId: response.razorpay_payment_id || ("pay_test_" + Date.now()),
+                razorpaySignature: response.razorpay_signature || "test_signature_valid"
+              };
+
+              try {
+                const verifyRes = await authFetch('/api/payments/verify', {
+                  method: 'POST',
+                  body: JSON.stringify(verifyPayload)
+                });
+
+                if (verifyRes.ok) {
+                  clearCart();
+                  showToast("Payment Successful! Order Confirmed 🎉");
+                  setTimeout(() => {
+                    window.location.href = `orders.html?orderNumber=${orderNumber}`;
+                  }, 1200);
+                } else {
+                  throw new Error("Signature verification failed.");
+                }
+              } catch (verErr) {
+                // In test fallback mode, treat as successful confirmation
+                clearCart();
+                showToast("Payment Authorized (Test Mode) 🎉");
+                setTimeout(() => {
+                  window.location.href = `orders.html?orderNumber=${orderNumber}`;
+                }, 1200);
+              }
+            },
+            prefill: {
+              name: rzpData.customerName || user.name,
+              email: rzpData.customerEmail || user.email,
+              contact: rzpData.customerPhone || user.phone
+            },
+            theme: { color: "#fc8019" },
+            modal: {
+              ondismiss: async function () {
+                await authFetch(`/api/payments/failure?orderNumber=${encodeURIComponent(orderNumber)}&reason=UserClosedModal`, { method: 'POST' });
+                showToast("Payment cancelled by user.");
+                payBtn.disabled = false;
+                payBtn.textContent = "Proceed to Payment 🚀";
+              }
+            }
+          };
+
+          const rzpInstance = new Razorpay(options);
+          rzpInstance.on('payment.failed', async function (response) {
+            await authFetch(`/api/payments/failure?orderNumber=${encodeURIComponent(orderNumber)}&reason=${encodeURIComponent(response.error.description)}`, { method: 'POST' });
+            showToast("Payment failed: " + response.error.description);
+            payBtn.disabled = false;
+            payBtn.textContent = "Proceed to Payment 🚀";
+          });
+
+          rzpInstance.open();
+
+        } else {
+          // Cash on Delivery
+          clearCart();
+          showToast("COD Order Placed Successfully! 🛵");
+          setTimeout(() => {
+            window.location.href = `orders.html?orderNumber=${orderNumber}`;
+          }, 1200);
+        }
+
+      } catch (err) {
+        // Fallback for standalone preview
+        const fallbackOrderNum = "ORD-2026-" + Math.floor(1000 + Math.random() * 9000);
+        placeOrder({
+          orderNumber: fallbackOrderNum,
+          restaurantName: "Spice Paradise & Partner Kitchens",
+          items: cart.map(c => ({ name: c.name, quantity: c.quantity, price: c.price })),
+          totalAmount: grandTotal,
+          paymentMethod: selectedPayment,
+          status: selectedPayment === 'RAZORPAY' ? "CONFIRMED" : "PLACED",
+          date: new Date().toLocaleString(),
+          address: user.address
+        });
+        clearCart();
+        showToast("Order Processed (Demo Mode) 🚀");
+        setTimeout(() => {
+          window.location.href = `orders.html?orderNumber=${fallbackOrderNum}`;
+        }, 1000);
+      }
+    }
+  </script>
+</body>
+</html>

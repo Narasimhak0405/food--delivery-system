@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodieExpress - My Profile</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div id="navbarContainer"></div>
+
+  <main class="container">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.4rem;">My Account Profile 👤</h1>
+      <p style="color: var(--dark-light);">Manage your personal details, preferences, and saved addresses.</p>
+    </div>
+
+    <div class="cart-layout">
+      <!-- Left Column: Profile Card -->
+      <div>
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1.8rem;">
+            <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #fc8019, #e23744); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800;">
+              <span id="avatarLetter">R</span>
+            </div>
+            <div>
+              <h2 id="profileName" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 0.2rem;">Rahul Sharma</h2>
+              <p id="profileEmail" style="color: var(--dark-light); font-size: 0.92rem;">rahul@gmail.com</p>
+              <span style="background: #eccc68; color: #2f3542; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: bold;">
+                FOODIE GOLD MEMBER
+              </span>
+            </div>
+          </div>
+
+          <!-- Edit Profile Form -->
+          <form onsubmit="updateProfile(event)">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="editName" value="Rahul Sharma" required>
+            </div>
+
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" id="editPhone" value="9811122233" required>
+            </div>
+
+            <div class="form-group">
+              <label>Primary Delivery Address</label>
+              <textarea id="editAddress" rows="3" required>Flat 402, Sunshine Heights, 12th Main Road, HAL 2nd Stage, Indiranagar, Bangalore - 560038</textarea>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+              <button type="submit" class="btn-primary" style="flex: 1;">Save Changes</button>
+              <button type="button" onclick="logoutUser()" class="btn-primary" style="flex: 1; background: #e74c3c;">Sign Out</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right Column: Quick Stats & Saved Places -->
+      <div>
+        <div class="card">
+          <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 1rem;">Saved Addresses</h3>
+          
+          <div style="border: 1px solid var(--card-border); padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+              <strong style="font-size: 0.95rem;">🏠 Home</strong>
+              <span style="color: var(--primary); font-size: 0.8rem; font-weight: bold;">DEFAULT</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--dark-light);">Flat 402, Sunshine Heights, Indiranagar, Bangalore</p>
+          </div>
+
+          <div style="border: 1px solid var(--card-border); padding: 1rem; border-radius: 8px; margin-bottom: 1.2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+              <strong style="font-size: 0.95rem;">💼 Work</strong>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--dark-light);">Tower B, 3rd Floor, Prestige Tech Park, Outer Ring Road</p>
+          </div>
+
+          <button class="add-btn" style="width: 100%; margin: 0; padding: 0.6rem;">+ Add New Address</button>
+        </div>
+
+        <div class="card" style="background: linear-gradient(135deg, #2f3640, #1e272e); color: white;">
+          <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.4rem;">FoodieExpress Wallet</h3>
+          <p style="font-size: 0.85rem; color: #d2dae2; margin-bottom: 1rem;">Use wallet cash for instant 1-click checkout.</p>
+          <div style="font-size: 1.8rem; font-weight: 800; color: #2ecc71; margin-bottom: 1rem;">₹450.00</div>
+          <button class="btn-primary" style="background: var(--primary); padding: 0.6rem;">+ Add Funds</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footerContainer"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    renderHeader('profile');
+    renderFooter();
+
+    const user = getCurrentUser();
+    if (user) {
+      document.getElementById('profileName').textContent = user.name;
+      document.getElementById('profileEmail').textContent = user.email;
+      document.getElementById('avatarLetter').textContent = user.name.charAt(0).toUpperCase();
+      document.getElementById('editName').value = user.name;
+      document.getElementById('editPhone').value = user.phone || '9811122233';
+      document.getElementById('editAddress').value = user.address || 'Indiranagar, Bangalore';
+    }
+
+    function updateProfile(e) {
+      e.preventDefault();
+      const updated = {
+        ...user,
+        name: document.getElementById('editName').value.trim(),
+        phone: document.getElementById('editPhone').value.trim(),
+        address: document.getElementById('editAddress').value.trim()
+      };
+      setCurrentUser(updated);
+      showToast("Profile details updated successfully! ✅");
+      setTimeout(() => location.reload(), 800);
+    }
+  </script>
+</body>
+</html>
+

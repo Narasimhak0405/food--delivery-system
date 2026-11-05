@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodieExpress - My Orders & Live Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div id="navbarContainer"></div>
+
+  <main class="container">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.4rem;">My Past & Active Orders 📦</h1>
+      <p style="color: var(--dark-light);">Track your active food preparation, delivery progress, or request cancellation.</p>
+    </div>
+
+    <div id="ordersContainer">
+      <!-- Dynamically filled with order cards -->
+    </div>
+  </main>
+
+  <div id="footerContainer"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    renderHeader('orders');
+    renderFooter();
+
+    async function renderOrdersPage() {
+      const container = document.getElementById('ordersContainer');
+      const user = getCurrentUser();
+      let orders = [];
+
+      try {
+        const res = await authFetch(`/api/orders/user/${user.id || 2}`);
+        if (res.ok) {
+          const apiOrders = await res.json();
+          orders = (apiOrders && apiOrders.length > 0) ? apiOrders : getOrders();
+        } else {
+          orders = getOrders();
+        }
+      } catch (e) {
+        orders = getOrders();
+      }
+
+      if (orders.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 4.5rem 1rem; background: white; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📦</div>
+            <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.6rem;">No Orders Placed Yet</h2>
+            <p style="color: var(--dark-light); margin-bottom: 2rem;">When you place an order, it will appear here with live tracking.</p>
+            <a href="restaurants.html" class="btn-primary" style="display: inline-block; width: auto; padding: 0.85rem 2rem;">Order Some Food</a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = orders.map((order, idx) => {
+        const isLatest = idx === 0 && order.status !== 'CANCELLED';
+        const canCancel = (order.status === 'PLACED' || order.status === 'CONFIRMED');
+
+        return `
+          <div class="card" style="margin-bottom: 2rem;">
+            <!-- Order Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 1rem; flex-wrap: wrap; gap: 0.8rem;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800;">${order.restaurantName || 'FoodieExpress Kitchen'}</h3>
+                <p style="font-size: 0.88rem; color: var(--dark-light);">
+                  Order #${order.orderNumber} &bull; ${order.date || order.orderDate || 'Today'} &bull; Payment: <strong>${order.paymentMethod || 'RAZORPAY'}</strong>
+                </p>
+              </div>
+
+              <div style="text-align: right;">
+                <span style="font-weight: 800; font-size: 1.2rem; color: var(--dark);">₹${order.totalAmount}</span>
+                <div style="margin-top: 4px;">
+                  <span style="font-size: 0.78rem; font-weight: bold; padding: 3px 10px; border-radius: 12px; background: ${getStatusColor(order.status)}; color: white;">
+                    ${order.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Tracker for Active Orders -->
+            ${isLatest ? `
+              <div style="margin: 1.8rem 0; background: #fafbfc; padding: 1.2rem; border-radius: 8px;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; color: var(--dark);">Live Order Status</h4>
+                <div class="tracker-steps">
+                  <div class="tracker-step completed">
+                    <div class="step-icon">✓</div>
+                    <div class="step-label">Order Placed</div>
+                  </div>
+                  <div class="tracker-step ${order.status !== 'PLACED' ? 'completed' : ''}">
+                    <div class="step-icon">💳</div>
+                    <div class="step-label">Payment Confirmed</div>
+                  </div>
+                  <div class="tracker-step ${order.status === 'PREPARING' || order.status === 'OUT_FOR_DELIVERY' || order.status === 'DELIVERED' ? 'completed' : ''}">
+                    <div class="step-icon">🍳</div>
+                    <div class="step-label">Kitchen Preparing</div>
+                  </div>
+                  <div class="tracker-step ${order.status === 'OUT_FOR_DELIVERY' || order.status === 'DELIVERED' ? 'completed' : ''}">
+                    <div class="step-icon">🛵</div>
+                    <div class="step-label">Out for Delivery</div>
+                  </div>
+                  <div class="tracker-step ${order.status === 'DELIVERED' ? 'completed' : ''}">
+                    <div class="step-icon">🏠</div>
+                    <div class="step-label">Delivered</div>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Items Ordered -->
+            <div style="margin-top: 1rem;">
+              <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--dark-light); margin-bottom: 0.6rem; text-transform: uppercase;">Items Ordered</h4>
+              <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                ${(order.items || []).map(item => `
+                  <div style="display: flex; justify-content: space-between; font-size: 0.92rem;">
+                    <span>${item.quantity}x ${item.name || item.itemName}</span>
+                    <strong>₹${item.price * item.quantity || item.subtotal}</strong>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Address and Action Controls -->
+            <div style="margin-top: 1.2rem; padding-top: 0.8rem; border-top: 1px dashed var(--card-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <p style="font-size: 0.85rem; color: var(--dark-light);">
+                📍 Delivered to: <strong>${order.address || order.deliveryAddress || 'Saved Address'}</strong>
+              </p>
+              
+              <div style="display: flex; gap: 0.8rem;">
+                ${canCancel ? `
+                  <button onclick="requestOrderCancellation('${order.orderNumber}')" class="add-btn" style="margin: 0; color: #e74c3c; border-color: #e74c3c; padding: 0.4rem 1rem;">
+                    ❌ Cancel Order
+                  </button>
+                ` : ''}
+                <button onclick="reorderItems(${JSON.stringify(order.items || []).replace(/"/g, '&quot;')})" class="add-btn" style="margin: 0; padding: 0.4rem 1rem;">
+                  🔁 Reorder
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function requestOrderCancellation(orderNumber) {
+      const reason = prompt("Please provide a reason for cancellation:", "Ordered by mistake");
+      if (reason === null) return;
+
+      try {
+        const res = await authFetch('/api/orders/cancel', {
+          method: 'POST',
+          body: JSON.stringify({ orderNumber, reason })
+        });
+
+        if (res.ok) {
+          showToast("Order cancelled successfully. Refund initiated if prepaid.");
+        } else {
+          const err = await res.json();
+          showToast("❌ " + (err.message || "Cannot cancel order."));
+        }
+      } catch (e) {
+        // Fallback for offline demo
+        const orders = getOrders();
+        const found = orders.find(o => o.orderNumber === orderNumber);
+        if (found) {
+          found.status = "CANCELLED";
+          localStorage.setItem('foodie_orders', JSON.stringify(orders));
+        }
+        showToast("Order cancelled (Demo Mode).");
+      }
+      setTimeout(() => renderOrdersPage(), 800);
+    }
+
+    function getStatusColor(status) {
+      if (status === 'DELIVERED') return '#2ecc71';
+      if (status === 'OUT_FOR_DELIVERY') return '#3498db';
+      if (status === 'PREPARING' || status === 'CONFIRMED') return '#f39c12';
+      if (status === 'CANCELLED') return '#e74c3c';
+      return '#fc8019';
+    }
+
+    function reorderItems(items) {
+      items.forEach(it => {
+        addToCart({
+          id: Date.now() + Math.random(),
+          name: it.name || it.itemName,
+          price: it.price,
+          isVeg: true
+        });
+      });
+      window.location.href = "cart.html";
+    }
+
+    renderOrdersPage();
+  </script>
+</body>
+</html>
